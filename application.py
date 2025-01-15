@@ -5,7 +5,7 @@ from collections import defaultdict
 app = Flask(__name__)
 
 # 기상청 API 설정
-SERVICE_KEY = "YOUR_SERVICE_KEY"  # 발급받은 서비스 키 입력
+SERVICE_KEY = "u/tFOWu9xDYgBc2n6zUlZ+6PpZ3tLIUrjTcPxNnHPWQE8y4w2XzU3fHUre1ZEyB9hzPSDgN+KIEqIHB4U16Y6w=="  # 발급받은 서비스 키 입력
 BASE_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
 DATA_TYPE = "JSON"  # 요청 데이터 형식
 
