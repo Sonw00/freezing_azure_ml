@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역별 기상 예보</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>지역별 기상 예보</h1>
+    <form id="location-form">
+        <label for="region">지역:</label>
+        <select id="region" name="region">
+            <option value="">선택하세요</option>
+            {% for region, cities in locations.items() %}
+                <option value="{{ region }}">{{ region }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="city">도시:</label>
+        <select id="city" name="city" disabled>
+            <option value="">지역을 먼저 선택하세요</option>
+        </select>
+
+        <button type="submit">조회</button>
+    </form>
+
+    <table id="weather-table">
+        <thead>
+            <tr>
+                <th>날짜</th>
+                <th>시간</th>
+                <th>기온(℃)</th>
+                <th>풍속(m/s)</th>
+                <th>강수확률(%)</th>
+                <th>습도(%)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const locations = {{ locations|tojson }};
+        
+        $(document).ready(function () {
+            $("#region").change(function () {
+                const region = $(this).val();
+                const citySelect = $("#city");
+                citySelect.empty();
+
+                if (region) {
+                    const cities = locations[region];
+                    citySelect.append('<option value="">도시를 선택하세요</option>');
+                    for (const city in cities) {
+                        citySelect.append(`<option value="${city}">${city}</option>`);
+                    }
+                    citySelect.prop("disabled", false);
+                } else {
+                    citySelect.append('<option value="">지역을 먼저 선택하세요</option>');
+                    citySelect.prop("disabled", true);
+                }
+            });
+
+            $("#location-form").submit(function (e) {
+                e.preventDefault();
+                const region = $("#region").val();
+                const city = $("#city").val();
+
+                if (!region || !city) {
+                    alert("지역과 도시를 모두 선택하세요.");
+                    return;
+                }
+
+                $.ajax({
+                    url: "/get_weather",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ region, city }),
+                    success: function (data) {
+                        const tableBody = $("#weather-table tbody");
+                        tableBody.empty();
+
+                        for (const date in data) {
+                            for (const time in data[date]) {
+                                const weather = data[date][time];
+                                tableBody.append(`
+                                    <tr>
+                                        <td>${date}</td>
+                                        <td>${time}</td>
+                                        <td>${weather.TMP || "-"}</td>
+                                        <td>${weather.WSD || "-"}</td>
+                                        <td>${weather.POP || "-"}</td>
+                                        <td>${weather.REH || "-"}</td>
+                                    </tr>
+                                `);
+                            }
+                        }
+                    },
+                    error: function (err) {
+                        alert("날씨 데이터를 가져오는데 실패했습니다.");
+                    },
+                });
+            });
+        });
+    </script>
+</body>
+</html>
