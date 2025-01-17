@@ -66,7 +66,7 @@ AZURE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=sonw006428
 BLOB_CONTAINER_NAME = "freezing-ml"         # 컨테이너 이름
 MODEL_BLOB_NAME = "freezing_model"                  # 모델 파일 이름
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # FlaskApp 디렉토리 경로
-LOCAL_MODEL_PATH = os.path.join(BASE_DIR, "freezing_model.pkl")  # 모델 경로
+LOCAL_MODEL_PATH = os.path.join(BASE_DIR, "freezing_model")  # 모델 경로
 #LOCAL_MODEL_PATH = "C:\\py\\freezing_model.pkl"        # 로컬에 저장될 모델 경로
 
 # Blob Storage에서 모델 다운로드
@@ -78,13 +78,15 @@ def download_model_from_blob():
     with open(LOCAL_MODEL_PATH, "wb") as model_file:
         model_file.write(blob_client.download_blob().readall())
         
-def load_model():
-        if not os.path.exists(LOCAL_MODEL_PATH):
-            download_model_from_blob()
-        global model
-        with open(LOCAL_MODEL_PATH, "rb") as model_file:
-            model = pickle.load(model_file)
-        print("모델이 성공적으로 로드되었습니다!")
+# Flask 앱 초기화 시 모델 로드
+with app.app_context():
+    if not os.path.exists(LOCAL_MODEL_PATH):
+        download_model_from_blob()
+    global model
+    with open(LOCAL_MODEL_PATH, "rb") as model_file:
+        model = pickle.load(model_file)
+    print("모델이 성공적으로 로드되었습니다!")
+    print(LOCAL_MODEL_PATH)
         
     
 @app.route('/')
@@ -94,7 +96,6 @@ def main():
 @app.route('/index')
 def index(): 
     print("dff")
-    load_model()
     return render_template('index.html', locations=LOCATION_COORDS)
 
 @app.route('/index24')
@@ -160,7 +161,7 @@ def predict_freezing():
     # Extract relevant data from API response
     try:
         items = weather_data['response']['body']['items']['item']
-        print(items)
+        #print(items)
         filtered_items = [item for item in items if item['fcstDate'] == date]
         #print(filtered_items)
         # 시간별로 데이터 그룹화
