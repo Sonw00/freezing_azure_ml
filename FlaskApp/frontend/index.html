@@ -47,7 +47,7 @@
     <h1>우리 지역 결빙예측하기</h1>
     <ul class="nav" style="list-style: none;">
         <li class="nav-item disable">
-            <a id="backtomain" href="main.html" 
+            <a id="backtomain" href="/" 
             style="color: black; text-decoration: none; display: inline-block; padding: 10px 15px; border-radius: 5px;">
              모델링 분석결과 다시보기<span class="sr-only"></span>
             </a>
@@ -94,6 +94,10 @@
     </table>
 
     <script>
+        // const backend_base_url = "http://127.0.0.1:8000"
+        //const backend_base_url = "https://lucedude.link"
+        //const frontend_base_url = "http://127.0.0.1:5500"
+        
         const locations = {{ locations|tojson }};
         
         $(document).ready(function () {
@@ -192,6 +196,7 @@
                     error: function (xhr, status, error) {
                         console.error("Error:", error);
                         alert("날씨 데이터를 가져오는데 실패했습니다.");
+                        location.reload();
                     }
                 });
             });
