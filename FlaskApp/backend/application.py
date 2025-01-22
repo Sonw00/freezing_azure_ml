@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 from azure.storage.blob import BlobServiceClient 
 import pandas as pd
+import base64
 
 
 app = Flask(__name__)
@@ -122,11 +123,6 @@ def index():
     print("dff")
     return render_template('index.html', locations=LOCATION_COORDS)
 
-@app.route('/index24')
-def index24(): 
-    print("dff")
-    return render_template('index24.html', locations=LOCATION_COORDS)
-
 @app.route("/predict_freezing", methods=['POST'])
 def predict_freezing():
     req_data = request.json
@@ -222,11 +218,10 @@ def predict_freezing():
                               data['TMP'],
                               data['REH']
                               ]
-        prediction = model.predict([input_features])
-
-        #x_predict_scaled = scaler.transform([input_features])
-        #prediction = model.predict(x_predict_scaled)
-
+        df = pd.DataFrame(columns=['GRID_X','GRID_Y','Year','Month','Day','Hour','WS','TA_C','HM'])
+        df.loc[0] = input_features
+        x_predict_scaled = scaler.transform(df)
+        prediction = model.predict(x_predict_scaled)
         freezing_status = int(prediction[0])
         
         # 결과 저장
@@ -243,6 +238,35 @@ def predict_freezing():
         }
     #print(results)
     return jsonify(results)
+
+# Blob 데이터 가져오기 함수
+def get_blob_data(file_name):
+    # Blob 서비스 클라이언트 생성
+    blob_service_client = azure.storage.blob.BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
+    # 컨테이너 클라이언트 생성
+    container_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
+    # Blob 클라이언트 생성
+    blob_client = container_client.get_blob_client(file_name)
+    
+    # Blob 데이터 다운로드
+    blob_data = blob_client.download_blob().readall()
+    return blob_data
+
+@app.route('/load-model-data', methods=['GET'])
+def load_model_data():
+    # 요청에서 모델 이름(파일명) 받기
+    model_file_name = request.args.get('model')  # 쿼리 파라미터로 받은 모델 이름 (파일명)
+    
+    try:
+        # Azure Blob에서 해당 모델 파일 가져오기
+        blob_data = get_blob_data(model_file_name)
+        
+        # 가져온 데이터를 Base64로 인코딩하여 응답
+        encoded_data = base64.b64encode(blob_data).decode('utf-8')
+        
+        return jsonify(result='success', data=encoded_data)
+    except Exception as e:
+        return jsonify(result='error', message=str(e))
         
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
